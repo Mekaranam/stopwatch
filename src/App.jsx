@@ -1,66 +1,59 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const App = () => {
   const [timer, setTimer] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const [minutes, setMinutes] = useState(0);
-  const [hours, setHours] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const timerRef = useRef(null); 
 
-const formatTime = (value) => {
-  return String(value).padStart(2, "0");
-};
-
-  
-
-  const handleReset = () => {
-    setHours(0);
-    setMinutes(0);
-    setSeconds(0);
-    setTimer(false);
-  };
+  const formatTime = (value) => String(value).padStart(2, "0");
 
   useEffect(() => {
-    let interval = null;
-
-    if (timer) {
-      interval = setInterval(() => {
-        setSeconds((prevSeconds) => {
-          if (prevSeconds === 59) {
-            setMinutes((prevMinutes) => {
-              if (prevMinutes === 59) {
-                setHours((prevHours) => prevHours + 1);
-                return 0;
-              }
-              return prevMinutes + 1;
-            });
-            return 0;
-          }
-          return prevSeconds + 1;
-        });
-      }, 1000);
+    if (!timer) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+      return;
     }
 
-    return () => clearInterval(interval);
+    const startTimestamp = Date.now() - elapsedMs;
+
+    timerRef.current = setInterval(() => {
+      setElapsedMs(Date.now() - startTimestamp);
+    }, 10);
+
+    return () => clearInterval(timerRef.current);
   }, [timer]);
 
-  return (
-    <div className="flex text-bold flex-col bg-gray-400 p-8 justify-center align-center text-center font-mono m-8 rounded-3xl min-w-sm h-screen">
-      <h1 className="text-6xl">StopWatch</h1>
+  const handleReset = () => {
+    setTimer(false);
+    setElapsedMs(0);
+  };
 
-      <div className="flex flex-row justify-center font-mono m-4 p-5 text-6xl">
-        <h2>{formatTime(hours)}:</h2>
-        <h2>{formatTime(minutes)}:</h2>
-        <h2>{formatTime(seconds)}</h2>
+  const hours = Math.floor(elapsedMs / 3600000);
+  const minutes = Math.floor((elapsedMs % 3600000) / 60000);
+  const seconds = Math.floor((elapsedMs % 60000) / 1000);
+  const milliseconds = Math.floor((elapsedMs % 1000) / 10);
+
+  return (
+    <div className="flex flex-col bg-gray-400 p-8 justify-center items-center text-center font-mono m-8 rounded-3xl h-screen">
+      <h1 className="text-6xl mb-6">StopWatch</h1>
+
+      <div className="flex text-6xl mb-6">
+        <span>{formatTime(hours)}:</span>
+        <span>{formatTime(minutes)}:</span>
+        <span>{formatTime(seconds)}:</span>
+        <span>{formatTime(milliseconds)}</span>
       </div>
+
       <div>
         <button
-          className="p-5 rounded-xl shadow-xl bg-red-400/70 hover:bg-red-400"
+          className="p-5 rounded-xl shadow-xl bg-red-400/70 hover:bg-red-400 mr-2"
           onClick={() => setTimer(!timer)}
         >
           {timer ? "Pause" : "Start"}
         </button>
+
         <button
-          className="p-5 rounded-xl shadow-xl bg-red-200/70 m-2 hover:bg-red-200"
+          className="p-5 rounded-xl shadow-xl bg-red-200/70 hover:bg-red-200"
           onClick={handleReset}
         >
           Reset
